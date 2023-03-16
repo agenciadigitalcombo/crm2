@@ -81,6 +81,7 @@ class App_mail_template
     public function __construct()
     {
         $this->ci = &get_instance();
+        
     }
 
     /**

@@ -1009,7 +1009,7 @@ class Tasks_model extends App_Model
                 $project_settings = $this->db->get(db_prefix() . 'project_settings')->row();
 
                 if ($project_settings && $project_settings->value == 1) {
-                    $this->_send_customer_contacts_notification($data['taskid'], 'task_new_comment_to_customer');
+                    // $this->_send_customer_contacts_notification($data['taskid'], 'task_new_comment_to_customer');
                 }
             }
 
@@ -1019,6 +1019,10 @@ class Tasks_model extends App_Model
         }
 
         return false;
+    }
+
+    public function send_task_mail_end( $data ) {
+        $this->_send_customer_contacts_notification_end($data['taskid'], 'task_new_comment_to_customer');
     }
 
     /**
@@ -1757,6 +1761,32 @@ class Tasks_model extends App_Model
     }
 
     public function _send_customer_contacts_notification($taskid, $template_name)
+    {
+        $this->db->select('rel_id,visible_to_client,rel_type');
+        $this->db->from(db_prefix() . 'tasks');
+        $this->db->where('id', $taskid);
+        $task = $this->db->get()->row();
+
+        if ($task->rel_type == 'project') {
+            $this->db->where('project_id', $task->rel_id);
+            $this->db->where('name', 'view_tasks');
+            $project_settings = $this->db->get(db_prefix() . 'project_settings')->row();
+            if ($project_settings) {
+                if ($project_settings->value == 1 && $task->visible_to_client == 1) {
+                    $this->load->model('clients_model');
+                    $contacts = $this->clients_model->get_contacts_for_project_notifications($project_settings->project_id, 'task_emails');
+                    foreach ($contacts as $contact) {
+                        if (is_client_logged_in() && get_contact_user_id() == $contact['id']) {
+                            continue;
+                        }
+                        send_mail_template($template_name, $contact['email'], $contact['userid'], $contact['id'], $taskid);
+                    }
+                }
+            }
+        }
+    }    
+    
+    public function _send_customer_contacts_notification_end($taskid, $template_name)
     {
         $this->db->select('rel_id,visible_to_client,rel_type');
         $this->db->from(db_prefix() . 'tasks');

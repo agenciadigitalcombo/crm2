@@ -677,8 +677,13 @@ class Tasks extends AdminController
                     }
                 }
             }
+            // aqui
+            $this->tasks_model->send_task_mail_end($data);
+            
         }
         echo json_encode([
+            'data'  => $data,
+            'comment_id' => $comment_id,
             'success'  => $comment_id ? true : false,
             'taskHtml' => $this->get_task_data($data['taskid'], true),
         ]);
